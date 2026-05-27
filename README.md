@@ -62,5 +62,4 @@ python nutrition_extract.py
 
 ## TODO
 
-* Expand the FNDDS converter into a direct FNDDS load file (food codes,
-  FNDDS nutrient-file layout) once the target FNDDS release is confirmed.
+* Direct FNDDS load file (food codes, FNDDS nutrient-file layout)
