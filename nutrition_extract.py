@@ -88,8 +88,6 @@ elif Path(_TESS_WIN).exists():
 NUTRIENTS: List[dict] = [
     dict(code="energy_kcal",       unit="kcal", dv=None,  fndds_no=208, fndds_name="Energy (kcal)",
          label=r"calories"),
-    dict(code="protein_g",         unit="g",    dv=50,    fndds_no=203, fndds_name="Protein (g)",
-         label=r"protein"),
     dict(code="total_fat_g",       unit="g",    dv=78,    fndds_no=204, fndds_name="Total Fat (g)",
          label=r"total\s*fat"),
     dict(code="sat_fat_g",         unit="g",    dv=20,    fndds_no=606, fndds_name="Fatty acids, total saturated (g)",
@@ -102,6 +100,8 @@ NUTRIENTS: List[dict] = [
          label=r"polyun?saturated\s*fat"),
     dict(code="cholesterol_mg",    unit="mg",   dv=300,   fndds_no=601, fndds_name="Cholesterol (mg)",
          label=r"cholesterol"),
+    dict(code="sodium_mg",         unit="mg",   dv=2300,  fndds_no=307, fndds_name="Sodium (mg)",
+         label=r"sodium"),
     dict(code="carb_g",            unit="g",    dv=275,   fndds_no=205, fndds_name="Carbohydrate (g)",
          label=r"(?:total\s*)?carb(?:ohydrates?|s)?\.?\b"),
     dict(code="fiber_g",           unit="g",    dv=28,    fndds_no=291, fndds_name="Fiber, total dietary (g)",
@@ -110,14 +110,16 @@ NUTRIENTS: List[dict] = [
          label=r"sugars?"),
     dict(code="added_sugars_g",    unit="g",    dv=50,    fndds_no=None, fndds_name="Added sugars (g)",
          label=r"added\s*sugars?"),
-    dict(code="sodium_mg",         unit="mg",   dv=2300,  fndds_no=307, fndds_name="Sodium (mg)",
-         label=r"sodium"),
-    dict(code="potassium_mg",      unit="mg",   dv=4700,  fndds_no=306, fndds_name="Potassium (mg)",
-         label=r"potassium"),
+    dict(code="protein_g",         unit="g",    dv=50,    fndds_no=203, fndds_name="Protein (g)",
+         label=r"protein"),
+    dict(code="vitamin_d_mcg",     unit="mcg",  dv=20,    fndds_no=328, fndds_name="Vitamin D (D2+D3) (mcg)",
+         label=r"vitamin\s*d"),
     dict(code="calcium_mg",        unit="mg",   dv=1300,  fndds_no=301, fndds_name="Calcium (mg)",
          label=r"calcium"),
     dict(code="iron_mg",           unit="mg",   dv=18,    fndds_no=303, fndds_name="Iron (mg)",
          label=r"iron"),
+    dict(code="potassium_mg",      unit="mg",   dv=4700,  fndds_no=306, fndds_name="Potassium (mg)",
+         label=r"potassium"),
     dict(code="magnesium_mg",      unit="mg",   dv=420,   fndds_no=304, fndds_name="Magnesium (mg)",
          label=r"magnesium"),
     dict(code="phosphorus_mg",     unit="mg",   dv=1250,  fndds_no=305, fndds_name="Phosphorus (mg)",
@@ -128,8 +130,6 @@ NUTRIENTS: List[dict] = [
          label=r"vitamin\s*a"),
     dict(code="vitamin_c_mg",      unit="mg",   dv=90,    fndds_no=401, fndds_name="Vitamin C (mg)",
          label=r"vitamin\s*c"),
-    dict(code="vitamin_d_mcg",     unit="mcg",  dv=20,    fndds_no=328, fndds_name="Vitamin D (D2+D3) (mcg)",
-         label=r"vitamin\s*d"),
     dict(code="vitamin_e_mg",      unit="mg",   dv=15,    fndds_no=323, fndds_name="Vitamin E (alpha-tocopherol) (mg)",
          label=r"vitamin\s*e"),
     dict(code="thiamin_mg",        unit="mg",   dv=1.2,   fndds_no=404, fndds_name="Thiamin (mg)",
@@ -1229,6 +1229,7 @@ def extract_from_pdf(pdf_path: Path) -> dict:
 
         row[c] = amount
         row[f"{c}_per100g"] = p100
+        row[f"{c}_dv"] = dv
 
     row["ingredients"] = ingredients
     notes = validate(row, serving_g, method, estimated, rescaled)
@@ -1303,6 +1304,7 @@ def extract_from_image(img_path: Path) -> dict:
 
         row[c] = amount
         row[f"{c}_per100g"] = p100
+        row[f"{c}_dv"] = dv
 
     row["ingredients"] = ingredients
     notes = validate(row, serving_g, method, estimated, rescaled)
@@ -1348,6 +1350,7 @@ def batch_extract(folder: Path) -> List[dict]:
             for c in NUTRIENT_CODES:
                 err[c] = None
                 err[f"{c}_per100g"] = None
+                err[f"{c}_dv"] = None
             rows.append(err)
     return rows
 
@@ -1362,7 +1365,8 @@ def build_extraction_frame(rows: List[dict]) -> pd.DataFrame:
             "confidence", "confidence_rating"]
     amount_cols = NUTRIENT_CODES
     per100_cols = [f"{c}_per100g" for c in NUTRIENT_CODES]
-    ordered = meta + amount_cols + per100_cols + ["validation_notes", "ingredients"]
+    dv_cols = [f"{c}_dv" for c in NUTRIENT_CODES]
+    ordered = meta + amount_cols + dv_cols + per100_cols + ["validation_notes", "ingredients"]
     df = pd.DataFrame(rows)
     for col in ordered:
         if col not in df.columns:
